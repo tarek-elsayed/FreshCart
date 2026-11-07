@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldError } from "@/components/ui/field";
@@ -11,6 +11,7 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { loginSchema, loginSchemaType } from "../schema/login.schema";
+import { signIn } from "next-auth/react";
 
 export default function Login() {
   const [isLoading, setisLoading] = useState(false);
@@ -18,7 +19,6 @@ export default function Login() {
   const form = useForm<loginSchemaType>({
     defaultValues: {
       email: "",
-
       password: "",
     },
     resolver: zodResolver(loginSchema),
@@ -48,42 +48,67 @@ export default function Login() {
   ];
 
   const handleLogin = async (values: loginSchemaType) => {
+    setisLoading(true);
     try {
-      setisLoading(true);
-      const respones = await fetch(
-        `https://ecommerce.routemisr.com/api/v1/auth/signin`,
-        {
-          method: "POST",
-          body: JSON.stringify(values),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      const data = await respones.json();
-      if (data.message == "success") {
-        toast.success(data.message, {
-          position: "bottom-left",
+      const response = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+        callbackUrl: "/",
+      });
+
+      // const data =await response;
+
+      if (response?.ok == true) {
+        toast.success("Login Successfully", {
+          position: "top-right",
           delay: 2000,
           autoClose: 1500,
         });
-        router.push("/");
-      } else {
-        toast.error(data.message, {
-          position: "bottom-left",
-          delay: 2000,
-          autoClose: 1500,
-        });
+        setTimeout(() => {
+          router.push('/')
+        }, 2000);
       }
     } catch (error) {
-      toast.error("Something went wrong", {
-        position: "bottom-left",
-        delay: 2000,
-        autoClose: 1500,
-      });
+      setisLoading(false);
     } finally {
       setisLoading(false);
     }
+    // try {
+    //   const respones = await fetch(
+    //     `https://ecommerce.routemisr.com/api/v1/auth/signin`,
+    //     {
+    //       method: "POST",
+    //       body: JSON.stringify(values),
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //       },
+    //     },
+    //   );
+    //   const data = await respones.json();
+    //   if (data.message == "success") {
+    //     toast.success(data.message, {
+    //       position: "bottom-left",
+    //       delay: 2000,
+    //       autoClose: 1500,
+    //     });
+    //     router.push("/");
+    //   } else {
+    //     toast.error(data.message, {
+    //       position: "bottom-left",
+    //       delay: 2000,
+    //       autoClose: 1500,
+    //     });
+    //   }
+    // } catch (error) {
+    //   toast.error("Something went wrong", {
+    //     position: "bottom-left",
+    //     delay: 2000,
+    //     autoClose: 1500,
+    //   });
+    // } finally {
+    //   setisLoading(false);
+    // }
   };
 
   return (
@@ -91,13 +116,10 @@ export default function Login() {
       <div className="w-[90%] lg:w-[60%] shadow-2xl p-5 mx-auto my-5 rounded-2xl">
         <h2 className="text-xl text-center">
           {" "}
-          Welcome to FreshCart , Shignup here:
+          Welcome to FreshCart , SignIn here:
         </h2>
 
-        <form
-          onSubmit={form.handleSubmit(handleLogin, (errors) => {
-          })}
-        >
+        <form onSubmit={form.handleSubmit(handleLogin, (errors) => {})}>
           {formInputs.map((input) => (
             <Controller
               key={input.name}
